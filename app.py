@@ -30,8 +30,6 @@ def check_email(email):
     return email.lower().endswith("@facsciences-uy1.cm")
 
 # --- BASE DE DONNÉES SIMULÉE (ADMIN) ---
-# Seul TOI (Mbunda) décides qui entre. Format: {email_crypte: password_crypte}
-# Pour le test, on utilise des variables de session
 if 'db_users' not in st.session_state:
     st.session_state.db_users = {} 
 
@@ -53,8 +51,7 @@ if not st.session_state.auth:
             if not check_email(email_input):
                 st.error("Utilise ton email @facsciences-uy1.cm, bro.")
             else:
-                # Ici la logique de vérification cryptée
-                st.session_state.auth = True # Activation temporaire pour tes tests
+                st.session_state.auth = True 
                 st.session_state.current_user = email_input
                 st.rerun()
 
@@ -67,7 +64,6 @@ else:
 
     if menu == "🏆 Leaderboard IQ":
         st.header("🏆 Classement Public des Physiciens")
-        # Données cryptées déchiffrées uniquement pour l'affichage
         leaderboard_data = {"Étudiant": ["Major_Matière", "Physicien_Alpha"], "IQ": [152, 138]}
         st.table(pd.DataFrame(leaderboard_data))
 
@@ -82,29 +78,44 @@ else:
 
     else:
         st.header(f"📍 Section {menu}")
-        chapitre = st.selectbox("Module : Physique de la Matière", ["Statistique de Fermi-Dirac", "Réseaux de Bravais", "Modèle de Debye"])
+        
+        # --- MODIFICATION ICI : Tes vrais modules de cours ---
+        chapitre = st.selectbox("Module : Physique de la Matière", [
+            "Genèse et États de la Matière", 
+            "Physique des Plasmas (Quasi-neutralité)", 
+            "Théorie Cinétique des Gaz (Pression & Énergie)",
+            "Loi de Distribution de Maxwell-Boltzmann"
+        ])
         
         if st.button("🚀 Générer un Défi du Mentor"):
             st.session_state.start_time = time.time()
-            # IA génère la question + estimation de temps
-            prompt = f"Génère un exercice technique sur {chapitre} pour L3 Physique. Donne aussi un temps estimé de résolution."
+            
+            # --- MODIFICATION ICI : Injection du contexte de tes notes ---
+            contexte_cours = {
+                "Genèse et États de la Matière": "Nucléosynthèse primordiale et stellaire, E=mc2, équilibre entre énergie cinétique et interactions intermoléculaires.",
+                "Physique des Plasmas (Quasi-neutralité)": "Conditions d'existence du plasma, ne = somme(Zi*ni), description fluide (MHD) vs cinétique.",
+                "Théorie Cinétique des Gaz (Pression & Énergie)": "Pression cinétique P = 2/3 * n * <Ec>, énergie interne U = (l/2)RT, gaz monoatomiques vs diatomiques.",
+                "Loi de Distribution de Maxwell-Boltzmann": "Fonction de distribution f(r, v, t), probabilité de présence dans l'espace des phases."
+            }
+            
+            prompt = f"Tu es un Mentor en Physique à l'UY1. En te basant sur ce contexte : {contexte_cours[chapitre]}, génère un exercice de niveau L3 avec calculs. Donne aussi un temps estimé de résolution."
+            
             defi = model.generate_content(prompt).text
             st.session_state.active_quest = defi
-            st.session_state.est_time = 15 # Fixé par défaut ou extrait de l'IA
+            st.session_state.est_time = 15 
 
         if 'active_quest' in st.session_state:
             st.markdown(f"### Défi actuel :\n {st.session_state.active_quest}")
             st.warning(f"⏱️ Temps estimé : {st.session_state.est_time} min")
             
-            # Timer
             elapsed = int((time.time() - st.session_state.start_time) / 60)
             st.write(f"Temps écoulé : {elapsed} min")
 
-            # Upload Image avec Quota
             if st.session_state.photos_count < 15:
                 img = st.file_uploader("Upload ton calcul (Photo)", type=['jpg', 'png'])
                 if img:
                     st.session_state.photos_count += 1
                     st.success("Analyse en cours par le Mentor...")
+                    # Ici tu peux ajouter model.generate_content([img, "Corrige cet exercice"])
             else:
                 st.error("Quota journalier de 15 images atteint.")
